@@ -19,12 +19,12 @@ why it is cheap to run all day and safe to leave open.
 
 ## What it saved me
 
-In Ormus's words:
+In my own words:
 
 > Full fleet-view, great for on the glance "what is going on". The panes on
 > the right are dedicated to reviewing token economy.
 
-Two numbers measured on the server where his agents run, while this playbook
+Two numbers measured on the server where my agents run, while this playbook
 was written, show why the counting rules below matter: its Claude Code logs
 held 1579 usage lines for 688 calls, so a sum over lines would have counted
 the spend 2.3 times; and 380 shell processes had a plain RSS sum of 1.7 GiB
@@ -46,9 +46,9 @@ price, a yardstick, and your provider's usage page is the record.
 
 | Tool | Version | Check |
 |---|---|---|
-| [Herdr](https://herdr.dev) | 0.9.5 (tested; its snapshot API is protocol 22) | `herdr --version` |
 | Python | 3.11 or newer, for the view | `python3 --version` |
 | git | any recent version | `git --version` |
+| [Herdr](https://herdr.dev) | 0.9.5 (tested; its snapshot API is protocol 22) | `herdr --version` |
 | Linux | for RAM and programs by RAM; macOS shows load and disk only | `uname -s` |
 | Claude Code | only for the token pane's numbers; it writes the logs | `ls ~/.claude/projects` |
 | ssh and python3 3.9+ on other machines | only to show other machines | `ssh -o BatchMode=yes <alias> python3 --version` |
@@ -231,9 +231,11 @@ said.
 | `examples/run.sh`, `examples/expected-output.txt` | the demo and the text it must print |
 | `tests/` | offline tests that pin the behaviour on the synthetic data |
 | `check.sh` | the one gate: tests, placeholders, scrub |
-| `scripts/scrub.sh` | the scrub check, copied from playbook-packaging |
+| `scripts/scrub.sh` | the scrub check, copied unchanged from playbook-packaging |
 | `CHANGELOG.md` | what changed, newest first |
 
 ## Credits
 
-Made by Ormus (Ormus Solutions). Packaged with playbook-packaging by Ormus (Ormus Solutions). MIT license.
+Made by Ormus (Ormus Solutions). Packaged with
+[playbook-packaging](https://github.com/Ormus-Solutions/playbook-packaging),
+the playbook that sets how these playbook repos are packaged. MIT license.
