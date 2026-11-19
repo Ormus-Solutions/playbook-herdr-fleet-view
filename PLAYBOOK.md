@@ -1,27 +1,39 @@
-# Herdr fleet view: the playbook
+# Fleet view: the playbook
 
 This file is written for a coding agent (Claude Code, Codex, Grok) and is
 readable by a person. Do the steps in order. Each step is one action, a
 "Verify:" command and the result to expect. Stop at the first result that
-does not match and report what you saw.
+does not match and report what you saw. This is called a verification loop:
+a step that is checked before the next one starts never carries a broken
+state forward.
+
+Every command runs from the top folder of this repo, in a pane of the Herdr
+session the tab should go to. Herdr calls a space a workspace; its ids look
+like `w1` (a workspace), `w1:t2` (a tab) and `w1:p3` (a pane).
 
 ## Goal
 
-<FILL: one or two sentences: the state the reader's machine is in when this is done.>
+The Herdr workspace you work in has a tab named `Fleet`. Its left pane shows
+every space, every agent's state and every machine's load; its right pane
+shows what the agents spent today. Both refresh on their own and only read.
 
 ## Before you start
 
 | Need | Check | Expected | If it fails |
 |---|---|---|---|
-| Python 3.11 or newer | `python3 -c 'import sys; print(sys.version_info >= (3, 11))'` | `True` | install a newer Python from python.org or your package manager |
-| git | `git --version` | a version line | install git |
-| <FILL: another need, or delete this row> | `<FILL: check command>` | <FILL: expected> | <FILL: what to do> |
+| You run inside a Herdr pane | `test "${HERDR_ENV:-}" = 1 && echo inside` | `inside` | Stop. Open Herdr, open a pane in this repo's folder and start there: the steps add a tab to the session you run in. |
+| Herdr 0.9.5 or newer | `herdr --version` | `herdr 0.9.5` or a newer version | Install or update Herdr (`herdr update`, or herdr.dev). |
+| Python 3.11 or newer | `python3 -c 'import sys; print(sys.version_info >= (3, 11))'` | `True` | Install a newer Python from python.org or your package manager. |
+| You are in this repo | `test -f src/fleet_view.py && echo here` | `here` | `cd` into the clone of this repo. |
+| Claude Code logs, for the token pane | `test -d ~/.claude/projects && echo logs` | `logs` | The token pane will show $0.00. That is fine if you use other agents; see "Adapt it". |
 
 ## Steps
 
 ### 1. Run the demo on the synthetic data
 
-This shows what the tool does before anything on your machine changes.
+This shows what the views do before anything on your machine changes. The
+demo reads a saved Herdr snapshot, saved machine readings and made-up
+transcripts from `examples/demo/`, with a fixed clock.
 
 ```bash
 bash examples/run.sh
@@ -30,31 +42,175 @@ bash examples/run.sh
 Verify: `bash examples/run.sh | diff - examples/expected-output.txt && echo same`
 Expected: `same`
 
-### 2. <FILL: the next action>
+### 2. Run the gate
 
-<FILL: what to do, as one action, with the exact command.>
+The tests run offline on the same synthetic data. The scrub warns when you
+have no deny-list; that is fine for a reader.
 
-Verify: `<FILL: a command that proves it worked>`
-Expected: <FILL: what that command prints>
+```bash
+./check.sh
+```
+
+Verify: `./check.sh 2>/dev/null | tail -n 1`
+Expected: `check: ok`
+
+### 3. Copy the config
+
+All settings live in one file: the machines, the prices, where the logs are.
+`cp -n` never overwrites a config you already have, so the step is safe to
+run twice.
+
+```bash
+mkdir -p ~/.config/playbook-herdr-fleet-view
+cp -n examples/config.example.toml ~/.config/playbook-herdr-fleet-view/config.toml
+```
+
+Verify: `python3 src/fleet_view.py fleet --once | head -n 1 | cut -c 1-5`
+Expected: `Fleet`
+
+### 4. Read both views once
+
+`--once` prints a view and exits. Look at it: your spaces and agents should be
+there, and this machine's load.
+
+```bash
+python3 src/fleet_view.py fleet --once
+python3 src/fleet_view.py spend --once
+```
+
+Verify: `python3 src/fleet_view.py fleet --once | grep -c 'Herdr gave no spaces'`
+Expected: `0`. If it prints `1`, the line in the view says why. When it says
+`'herdr' was not found`, put the full path from `command -v herdr` in
+`[fleet] herdr` of the config.
+
+### 5. Make the Fleet tab and start the fleet pane
+
+One command line, in three parts. `herdr tab create` makes the tab and answers
+in JSON; Python takes the id of the tab's first pane from it. `herdr pane
+rename` labels that pane `fleet`, so the next steps can find it by name (a
+shell variable does not live from one step to the next in most agents'
+shells). `herdr pane run` types the command into the pane's shell.
+
+```bash
+pane=$(herdr tab create --workspace "$HERDR_WORKSPACE_ID" --label Fleet --cwd "$PWD" --no-focus | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["root_pane"]["pane_id"])') && herdr pane rename "$pane" fleet >/dev/null && herdr pane run "$pane" "python3 src/fleet_view.py fleet" >/dev/null && echo "started in $pane"
+```
+
+Verify: `herdr pane read "$(python3 src/herdr_state.py find pane fleet)" --source visible | grep -c '^Fleet '`
+Expected: `1`
+
+### 6. Split it to the right for the token pane
+
+`--ratio 0.55` keeps 55% of the width for the fleet pane, the pane that is
+split; the token pane gets the rest.
+
+```bash
+pane=$(herdr pane split "$(python3 src/herdr_state.py find pane fleet)" --direction right --ratio 0.55 --cwd "$PWD" --no-focus | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["pane"]["pane_id"])') && herdr pane rename "$pane" tokens >/dev/null && herdr pane run "$pane" "python3 src/fleet_view.py spend" >/dev/null && echo "started in $pane"
+```
+
+Verify: `herdr pane read "$(python3 src/herdr_state.py find pane tokens)" --source visible | grep -c '^Token economy'`
+Expected: `1`
+
+### 7. Optional: an agent under the token pane that reviews the spend
+
+Ask the person first: this starts a coding agent, and an agent spends tokens.
+It gives the right side a second pane, where the person asks an agent to read
+the numbers and judge them. Use the command of the agent the person uses
+(`claude`, `codex`, `grok`).
+
+```bash
+pane=$(herdr pane split "$(python3 src/herdr_state.py find pane tokens)" --direction down --ratio 0.6 --cwd "$PWD" --no-focus | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["pane"]["pane_id"])') && herdr pane rename "$pane" ask >/dev/null && herdr pane run "$pane" "claude" >/dev/null && echo "started in $pane"
+```
+
+Then the person types this into that agent, when they want a review:
+
+```text
+Run python3 src/fleet_view.py spend --json and tell me the three changes that
+would cut the most spend, with the numbers behind each. Change nothing, and
+type into no other pane.
+```
+
+Verify: `python3 src/herdr_state.py find pane ask`
+Expected: one pane id, such as `w2:p4`.
+
+### 8. Optional: add a machine you reach over ssh
+
+The view sends `src/machine.py` to the machine on stdin and reads JSON back,
+so nothing is installed there. It needs a login with a key (the view never
+waits for a password) and `python3` 3.9 or newer on that machine. Add a table
+to the config, with the alias from your `~/.ssh/config`:
+
+```toml
+[[machines]]
+name = "build-box"
+ssh = "build-box"
+```
+
+Verify: `python3 src/fleet_view.py fleet --json | python3 -c 'import json,sys; print([m["name"] for m in json.load(sys.stdin)["machines"] if m["ok"]])'`
+Expected: a list with `local` and the name you added. A machine that does not
+answer shows its reason in the fleet pane: test the login with
+`ssh -o BatchMode=yes build-box python3 --version`.
 
 ## Adapt it
 
 | Setting | Where | Example |
 |---|---|---|
-| Lanes | `~/.config/playbook-herdr-fleet-view/config.toml`, key `lanes` | `lanes = ["api", "web", "docs"]` |
-| <FILL: setting> | <FILL: file or env variable> | <FILL: example value> |
+| The machines | config, one `[[machines]]` table each | `name = "build-box"` and `ssh = "build-box"` |
+| Prices | config, `[prices.<key>]`; the longest key found in the model name wins | `[prices."opus-4"]` for an older model with another price |
+| When "today" starts | config, `[spend] day_start` | `day_start = "06:00"` |
+| Where the logs are | config, `[spend] logs` | `logs = ["~/.claude/projects", "/srv/agents/.claude/projects"]` |
+| The lever lines | config, `[spend] big_context` and `rebuild_share` | `big_context = 150000`, `rebuild_share = 0.25` |
+| How often each pane redraws | config, `[fleet] interval` and `[spend] interval` | `interval = 5` |
+| Programs shown per machine | config, `[fleet] top_programs` | `top_programs = 5` |
+| The Herdr command | config, `[fleet] herdr` | the full path from `command -v herdr` |
+| Which workspace gets the tab | `--workspace` in step 5 | a `workspace_id` from `herdr workspace list` |
+| Pane sizes | `--ratio` in steps 6 and 7 | `--ratio 0.6` keeps 60% for the pane that is split |
+| Another agent's logs | `src/spend.py`: a reader that builds `Call` records, like `calls_in` | a reader for Codex's session logs, with `READER_KIND = "codex"` |
+| A different config file | `--config` on each command | `python3 src/fleet_view.py fleet --config ~/fleet-home.toml` |
+
+Two notes for the config. A top-level key such as `clock` goes before the
+first `[table]`: TOML files every key after a table header under that table.
+And `clock` is only for the demo and the tests; leave it out.
 
 ## Done when
 
 - `./check.sh` prints `check: ok`.
-- <FILL: the checks that prove the reader has it working.>
+- `python3 src/herdr_state.py find tab Fleet` prints one tab id.
+- `herdr pane read "$(python3 src/herdr_state.py find pane fleet)" --source visible | grep -c '^Fleet '` prints `1`.
+- `herdr pane read "$(python3 src/herdr_state.py find pane tokens)" --source visible | grep -c '^Token economy'` prints `1`.
+- The person looked at the Fleet tab and saw their own spaces and agents in it.
 
 ## Undo
 
-<FILL: how to remove it cleanly: every file it wrote and every setting it changed.>
+Closing the tab ends the programs in its panes (measured with Herdr 0.9.5:
+both views ended). If step 7 started an agent there, closing the tab ends that
+agent's session too, so ask the person first.
+
+```bash
+herdr tab close "$(python3 src/herdr_state.py find tab Fleet)"
+rm -r ~/.config/playbook-herdr-fleet-view
+```
+
+Verify: `python3 src/herdr_state.py find tab Fleet; echo "exit $?"`
+Expected: `find: 0 tabs are labelled 'Fleet'; expected 1` and `exit 1`.
+Then delete the clone of this repo if you do not want it any more.
 
 ## Safety
 
-- Reads: <FILL: what it reads>
-- Writes: <FILL: what it writes, and where>
-- Never: <FILL: what it never does, for example send messages, delete data, read secrets>
+- Reads: one `herdr api snapshot` per refresh; on each machine `/proc/meminfo`,
+  `/proc/uptime`, the load average, the disk use of `/`, and each process's
+  name and RSS from `/proc/<pid>/status`; from the Claude Code transcripts,
+  only the lines with token counts, and from them only the time, the folder,
+  the session id, the model and the counts; the config file.
+- Writes: nothing. The views print to their pane. The steps write the config
+  file (step 3) and a tab with two or three panes (steps 5 to 7).
+- Over ssh: one `python3 -` with the probe on stdin; it reads and prints JSON.
+  `BatchMode=yes`, so it never waits for a password.
+- Never: sends a message, calls a model, types into another pane, stops or
+  signals a process, reads secrets or `.env` files, or prints what was said
+  in a transcript. Only the optional agent of step 7 calls a model, and only
+  when the person asks it something.
+- Your screen: the views show your space names, pane labels, folder names and
+  program names. So does `--json`. Treat a screenshot or a paste of them as you
+  would treat your project list.
+- The money is a yardstick: each call at the API list price in your config,
+  not what your plan bills.

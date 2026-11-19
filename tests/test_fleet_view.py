@@ -30,6 +30,12 @@ class DemoTest(unittest.TestCase):
         expected = (ROOT / "examples" / "expected-output.txt").read_text(encoding="utf-8")
         self.assertEqual(done.stdout, expected)
 
+    def test_the_readme_preview_is_the_demo_output(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        preview = readme.split("## Preview", 1)[1].split("```text\n", 1)[1].split("```", 1)[0]
+        expected = (ROOT / "examples" / "expected-output.txt").read_text(encoding="utf-8")
+        self.assertEqual(preview, expected)
+
     def test_no_colors_in_a_pipe(self) -> None:
         code, out = run_main("--demo")
         self.assertEqual(code, 0)
@@ -48,6 +54,10 @@ class DemoTest(unittest.TestCase):
         r = json.loads(out)
         self.assertEqual(r["counts"]["blocked"], 1)
         self.assertEqual([m["ok"] for m in r["machines"]], [True, True, False])
+
+    def test_demo_json_is_one_document(self) -> None:
+        _, out = run_main("--demo", "--json")
+        self.assertEqual(sorted(json.loads(out)), ["fleet", "spend"])
 
     def test_a_view_is_needed_without_demo(self) -> None:
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
@@ -85,6 +95,14 @@ class StaleTest(unittest.TestCase):
         text = fleet_view.render_fleet(r, fleet_view.Paint(False))
         self.assertIn("Herdr gave no spaces", text)
         self.assertIn("build-box", text)
+
+
+class IncompleteReadingTest(unittest.TestCase):
+    def test_one_bad_card_not_a_crash(self) -> None:
+        lines = fleet_view.machine_lines({"name": "box", "ok": True, "cores": 4},
+                                         fleet_view.Paint(False))
+        self.assertEqual(len(lines), 1)
+        self.assertIn("the reading is incomplete", lines[0])
 
 
 class LiveTest(unittest.TestCase):

@@ -119,6 +119,15 @@ def fleet_report(cfg: dict[str, Any], readings: dict[str, dict[str, Any]],
 
 
 def machine_lines(m: dict[str, Any], paint: Paint) -> list[str]:
+    """One machine's card. A reading with a missing field (a hand-made file,
+    an old kernel) gives one line that says so, not a crash of the pane."""
+    try:
+        return card_lines(m, paint)
+    except (KeyError, TypeError, ZeroDivisionError, IndexError) as e:
+        return [f"  {m['name']:<14}" + paint(f"the reading is incomplete ({e!r})", "yellow")]
+
+
+def card_lines(m: dict[str, Any], paint: Paint) -> list[str]:
     name = f"  {m['name']:<14}"
     if not m.get("ok") and not m.get("stale_since"):
         return [name + paint(f"no answer: {m.get('error', '?')}", "yellow")]
@@ -329,7 +338,12 @@ def main(argv: list[str] | None = None) -> int:
         return json.dumps(r, indent=2) + "\n" if args.json else render_spend(r, paint, footer)
 
     if args.demo and args.view is None:
-        sys.stdout.write(fleet_text() + "\n" + spend_text())
+        if args.json:  # one JSON document, so a program can read it
+            both = {"fleet": fleet_report(cfg, machines.read(), now_of(cfg)),
+                    "spend": spend_report(cfg, now_of(cfg))}
+            sys.stdout.write(json.dumps(both, indent=2) + "\n")
+        else:
+            sys.stdout.write(fleet_text() + "\n" + spend_text())
         return 0
     draw = fleet_text if args.view == "fleet" else spend_text
     if args.once or args.json or args.demo:

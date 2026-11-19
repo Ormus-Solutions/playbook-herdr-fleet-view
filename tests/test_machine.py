@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import platform
 import subprocess
 import sys
@@ -90,6 +91,41 @@ class ReadMachineTest(unittest.TestCase):
         finally:
             machine.ssh_argv = old
         self.assertEqual(reading, {"ok": False, "error": "ssh is not installed"})
+
+
+FAKE_SSH = """#!/bin/sh
+# A stand-in for ssh: skip the options and the alias, run the rest here.
+while [ "$1" = "-o" ]; do shift 2; done
+alias="$1"; shift
+[ "$alias" = "down-box" ] && { echo "ssh: connect to host $alias port 22: Connection refused" >&2; exit 255; }
+exec "$@"
+"""
+
+
+@unittest.skipUnless(platform.system() == "Linux", "the probe reads /proc on Linux")
+class SshPathTest(unittest.TestCase):
+    """The ssh path with a stand-in ssh: the probe goes on stdin, JSON comes back."""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        fake = Path(self.tmp.name) / "ssh"
+        fake.write_text(FAKE_SSH, encoding="utf-8")
+        fake.chmod(0o755)
+        self.old_path = os.environ["PATH"]
+        os.environ["PATH"] = f"{self.tmp.name}{os.pathsep}{self.old_path}"
+
+    def tearDown(self) -> None:
+        os.environ["PATH"] = self.old_path
+        self.tmp.cleanup()
+
+    def test_a_machine_over_ssh(self) -> None:
+        reading = machine.read_machine({"name": "build-box", "ssh": "build-box"}, top=2)
+        self.assertTrue(reading["ok"])
+        self.assertLessEqual(len(reading["programs"]), 2)
+
+    def test_a_machine_that_refuses(self) -> None:
+        reading = machine.read_machine({"name": "down-box", "ssh": "down-box"})
+        self.assertEqual((reading["ok"], reading["error"]), (False, "Connection refused"))
 
 
 @unittest.skipUnless(platform.system() == "Linux", "the probe reads /proc on Linux")

@@ -62,6 +62,7 @@ class ConfigTest(unittest.TestCase):
         self.check_error(PRICE + "[fleet]\ninterval = 0\n", "'interval' must be a number above 0")
         self.check_error(PRICE + '[[machines]]\nname = "a"\n[[machines]]\nname = "a"\n', "used twice")
         self.check_error(PRICE + '[[machines]]\nname = "a"\nssh = "a"\nfile = "a.json"\n', "not both")
+        self.check_error(PRICE + '[[machines]]\nname = "a"\nssh = "-oProxyCommand=x"\n', "not an option")
         # A top-level key goes before the first [table]: after it, TOML files it under that table.
         self.check_error('clock = "2026-01-15T17:30:00"\n' + PRICE, "time zone")
         self.check_error("this is = not toml =", "config.toml")

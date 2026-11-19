@@ -69,6 +69,8 @@ def load(path: Path) -> dict[str, Any]:
         names.add(name)
         if m.get("ssh") and m.get("file"):
             raise ConfigError(f"[[machines]] {name}: give 'ssh' or 'file', not both")
+        if str(m.get("ssh", "")).startswith("-"):  # ssh would read it as an option
+            raise ConfigError(f"[[machines]] {name}: 'ssh' must be an alias, not an option")
         if m.get("file"):
             m["file"] = resolve(m["file"], base)
 
