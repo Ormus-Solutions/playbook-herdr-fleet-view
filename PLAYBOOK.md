@@ -181,7 +181,7 @@ answer shows its reason in the fleet pane: test the login with
 | How often each pane redraws | config, `[fleet] interval` and `[spend] interval` | `interval = 5` |
 | Programs shown per machine | config, `[fleet] top_programs` | `top_programs = 5` |
 | The Herdr command the views run | config, `[fleet] herdr`; the steps use `herdr` from the PATH | the full path from `command -v herdr`, for a pane whose PATH has no Herdr |
-| Which workspace gets the tab | `--workspace` in step 5 | a `workspace_id` from `herdr workspace list` |
+| Which workspace gets the tab | the pane you run the steps in: the tab goes to that pane's workspace. Do not change `--workspace` in step 5: `find` looks only in the workspace of the pane it runs in (`HERDR_WORKSPACE_ID`), so the later steps would not find the tab | open a pane in the other workspace, `cd` into this repo there, and run the steps from that pane |
 | Pane sizes | `--ratio` in steps 6 and 7 | `--ratio 0.6` keeps 60% for the pane that is split |
 | Another agent's logs | `src/spend.py`: a reader that builds `Call` records, like `calls_in` | a reader for Codex's session logs, with `READER_KIND = "codex"` |
 | A different config file | `--config` on each command | `python3 src/fleet_view.py fleet --config ~/fleet-home.toml` |
