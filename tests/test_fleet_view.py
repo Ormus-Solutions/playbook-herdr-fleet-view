@@ -117,9 +117,63 @@ class LiveTest(unittest.TestCase):
 
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            code = fleet_view.live(draw, 0.01)
+            code = fleet_view.live(draw, 0.01, size=lambda: (80, 24))
         self.assertEqual(code, 0)
-        self.assertEqual(out.getvalue(), "\033[H\033[2Jframe\n")
+        # No newline after the last line: in a pane that is exactly full, a
+        # last newline would scroll the header out of view.
+        self.assertEqual(out.getvalue(), "\033[H\033[2Jframe")
+
+    def test_each_redraw_fits_the_pane(self) -> None:
+        frames = []
+
+        def draw() -> str:
+            if len(frames) == 2:
+                raise KeyboardInterrupt
+            frames.append(1)
+            return "".join(f"line {n}\n" for n in range(30))
+
+        sizes = iter([(80, 10), (80, 5)])  # the pane shrinks between redraws
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            fleet_view.live(draw, 0.01, size=lambda: next(sizes))
+        first, second = out.getvalue().split("\033[H\033[2J")[1:]
+        self.assertEqual(len(first.split("\n")), 10)
+        self.assertEqual(len(second.split("\n")), 5)
+
+
+class FitTest(unittest.TestCase):
+    """A live view is cut to its pane from the bottom, so the header and the
+    "Needs you" line stay on screen in a pane shorter than the view."""
+
+    def rows_of(self, text: str, cols: int) -> int:
+        return sum(max(1, -(-len(line) // cols)) for line in text.split("\n"))
+
+    def test_text_that_fits_is_kept_whole(self) -> None:
+        self.assertEqual(fleet_view.fit("a\nb\n", 80, 24), "a\nb")
+
+    def test_a_tall_view_keeps_its_top_and_says_what_was_cut(self) -> None:
+        _, text = run_main("fleet", "--demo")
+        out = fleet_view.fit(text, 80, 12)
+        lines = out.split("\n")
+        self.assertTrue(lines[0].startswith("Fleet "))
+        self.assertTrue(lines[1].startswith("Needs you: "))
+        self.assertLessEqual(self.rows_of(out, 80), 12)
+        cut = len(text.rstrip("\n").split("\n")) - (len(lines) - 1)
+        self.assertEqual(lines[-1], f"... and {cut} more lines (a taller pane shows them)")
+
+    def test_a_narrow_pane_counts_wrapped_rows(self) -> None:
+        _, text = run_main("spend", "--demo")
+        out = fleet_view.fit(text, 45, 20)
+        self.assertTrue(out.startswith("Token economy"))
+        self.assertLessEqual(self.rows_of(out, 45), 20)
+
+    def test_colors_take_no_room(self) -> None:
+        red = "\033[31m" + "x" * 10 + "\033[0m"
+        self.assertEqual(fleet_view.fit(f"{red}\n{red}", 10, 2), f"{red}\n{red}")
+
+    def test_a_tiny_pane_still_shows_the_header(self) -> None:
+        out = fleet_view.fit("Fleet  header\n" + "row\n" * 9, 80, 1)
+        self.assertTrue(out.startswith("Fleet  header\n"))
 
 
 class FormatTest(unittest.TestCase):

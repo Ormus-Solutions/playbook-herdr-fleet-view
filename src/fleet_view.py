@@ -23,6 +23,8 @@ import argparse
 import json
 import math
 import os
+import re
+import shutil
 import sys
 import textwrap
 import time
@@ -42,6 +44,8 @@ BAR = 16
 WIDTH = 78  # long lines wrap here, so a half-screen pane still reads well
 SPARKS = "▁▂▃▄▅▆▇█"
 COLORS = {"red": "31", "yellow": "33", "green": "32", "dim": "2", "bold": "1"}
+ANSI = re.compile(r"\033\[[0-9;]*m")  # a color code: it takes no room on screen
+MORE = "... and {} more lines (a taller pane shows them)"
 STATE_COLOR = {"blocked": "red", "waiting": "yellow", "working": "green", "idle": "dim"}
 
 
@@ -295,12 +299,41 @@ def now_of(cfg: dict[str, Any]) -> datetime:
     return cfg["clock"] or datetime.now().astimezone()
 
 
-def live(draw, interval: float) -> int:
-    """Redraw on a timer. \033[H\033[2J moves the cursor home and clears the screen."""
+def fit(text: str, cols: int, rows: int) -> str:
+    """Cut a view to a pane of cols x rows, from the bottom.
+
+    A view taller than its pane would scroll, and its first lines (the header
+    and "Needs you") would leave the screen. So the bottom goes instead, and
+    the last row says how many lines did not fit. The terminal wraps a line
+    wider than the pane, so each line counts as the rows it takes. There is
+    no newline after the last line: in a full pane it would scroll by one."""
+    lines = text.rstrip("\n").split("\n")
+    cols = max(cols, 1)
+
+    def height(line: str) -> int:
+        return max(1, math.ceil(len(ANSI.sub("", line)) / cols))
+
+    if sum(height(line) for line in lines) <= rows:
+        return "\n".join(lines)
+    room = rows - height(MORE.format(len(lines)))
+    kept: list[str] = []
+    used = 0
+    for line in lines:
+        if kept and used + height(line) > room:  # the header always stays
+            break
+        kept.append(line)
+        used += height(line)
+    return "\n".join(kept + [MORE.format(len(lines) - len(kept))])
+
+
+def live(draw, interval: float, size=shutil.get_terminal_size) -> int:
+    """Redraw on a timer. \033[H\033[2J moves the cursor home and clears the
+    screen. The pane's size is read on each redraw, so a resize is followed."""
     try:
         while True:
             text = draw()
-            sys.stdout.write("\033[H\033[2J" + text)
+            cols, rows = size()
+            sys.stdout.write("\033[H\033[2J" + fit(text, cols, rows))
             sys.stdout.flush()
             time.sleep(interval)
     except KeyboardInterrupt:
