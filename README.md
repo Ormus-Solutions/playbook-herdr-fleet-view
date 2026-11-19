@@ -74,7 +74,7 @@ Run these in a Herdr pane, inside the clone:
 
 1. See it work on the synthetic data: `bash examples/run.sh`.
 2. Copy the settings and change them if you like (machines, prices):
-   `mkdir -p ~/.config/playbook-herdr-fleet-view && cp -n examples/config.example.toml ~/.config/playbook-herdr-fleet-view/config.toml`
+   `mkdir -p ~/.config/playbook-herdr-fleet-view && test -f ~/.config/playbook-herdr-fleet-view/config.toml || cp examples/config.example.toml ~/.config/playbook-herdr-fleet-view/config.toml`
 3. Try both views once: `python3 src/fleet_view.py fleet --once` and
    `python3 src/fleet_view.py spend --once`.
 4. Make the tab and start the fleet pane in it: step 5 of PLAYBOOK.md (one

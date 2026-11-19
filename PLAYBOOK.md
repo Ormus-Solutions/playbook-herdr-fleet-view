@@ -57,12 +57,14 @@ Expected: `check: ok`
 ### 3. Copy the config
 
 All settings live in one file: the machines, the prices, where the logs are.
-`cp -n` never overwrites a config you already have, so the step is safe to
-run twice.
+`test -f ... ||` copies only when there is no config yet, so the step never
+overwrites yours and is safe to run twice. (`cp -n` would do the same, but
+some versions of GNU cp exit 1 when they skip a file, and that looks like a
+failure.)
 
 ```bash
 mkdir -p ~/.config/playbook-herdr-fleet-view
-cp -n examples/config.example.toml ~/.config/playbook-herdr-fleet-view/config.toml
+test -f ~/.config/playbook-herdr-fleet-view/config.toml || cp examples/config.example.toml ~/.config/playbook-herdr-fleet-view/config.toml
 ```
 
 Verify: `python3 src/fleet_view.py fleet --once | head -n 1 | cut -c 1-5`
@@ -78,8 +80,10 @@ python3 src/fleet_view.py fleet --once
 python3 src/fleet_view.py spend --once
 ```
 
-Verify: `python3 src/fleet_view.py fleet --once | grep -c 'Herdr gave no spaces'`
-Expected: `0`. If it prints `1`, the line in the view says why. When it says
+Verify: `python3 src/fleet_view.py fleet --once | grep -c 'Herdr gave no spaces' || true`
+Expected: `0`. (`grep -c` exits 1 when it counts nothing; `|| true` keeps
+that from looking like a failure.) If it prints `1`, the line in the view
+says why. When it says
 `'herdr' was not found`, put the full path from `command -v herdr` in
 `[fleet] herdr` of the config.
 
