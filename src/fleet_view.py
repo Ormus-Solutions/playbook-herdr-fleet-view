@@ -231,10 +231,13 @@ class Machines:
 def spend_report(cfg: dict[str, Any], now: datetime) -> dict[str, Any]:
     s = cfg["spend"]
     since = spend.day_start(now, s["day_start"])
-    calls, files = spend.read_calls([Path(p) for p in s["logs"]], since, now, cfg["prices"])
+    unpriced: dict[str, set[str]] = {}
+    calls, files = spend.read_calls([Path(p) for p in s["logs"]], since, now, cfg["prices"],
+                                    unpriced)
     spaces, error = herdr_state.load_spaces(cfg["fleet"]["herdr"], cfg["fleet"]["snapshot_file"])
     agents = [a for space in spaces for a in space.agents]
-    r = spend.report(calls, agents, since, now, s["big_context"], s["rebuild_share"], files)
+    r = spend.report(calls, agents, since, now, s["big_context"], s["rebuild_share"], files,
+                     {model: len(ids) for model, ids in unpriced.items()})
     r["herdr_error"] = error
     return r
 
@@ -285,6 +288,10 @@ def render_spend(r: dict[str, Any], paint: Paint, footer: str = "") -> str:
     note = f"Read {plural(r['transcripts'], 'Claude Code transcript')}."
     if r["no_reader"]:
         note += f" No reader yet for {', '.join(r['no_reader'])}, so their spend is not shown."
+    if r.get("unpriced"):
+        models = ", ".join(f"{m} ({plural(n, 'call')})" for m, n in r["unpriced"].items())
+        note += (f" No price for {models}, so those calls are not counted:"
+                 " add a key to [prices] in the config.")
     lines += [""] + [paint(line, "dim") for line in wrap(note, "", "")]
     if footer:
         lines.append(paint(footer, "dim"))

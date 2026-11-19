@@ -32,8 +32,12 @@ rebuild_share = 0.30            # cache writes above this share of the tokens re
 # USD per million tokens, matched against the model name: the longest key
 # that appears in it wins. These are the API list prices of the current
 # models when this was written (2026-11): check the provider's price page.
-# For an older model with another price, add a longer key, for example
-# [prices."opus-4"] next to [prices.opus].
+# A key covers every model whose name holds it, older ones too: "haiku"
+# alone would price claude-haiku-4-5 at Haiku 5.5's price, so it has its own
+# key below. A version key covers its point releases as well: "opus-5" also
+# matches claude-opus-5-5, so give a point release with another price its
+# own, longer key ("opus-5-5"). A model with no key is named under the token
+# pane, with how many of its calls were not counted.
 [prices.fable]
 input = 8.0
 output = 40.0
@@ -61,3 +65,10 @@ output = 0.50
 cache_read = 0.01
 cache_write_5m = 0.125
 cache_write_1h = 0.20
+
+[prices."haiku-4-5"]
+input = 1.0
+output = 5.0
+cache_read = 0.10
+cache_write_5m = 1.25
+cache_write_1h = 2.0

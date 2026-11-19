@@ -60,7 +60,9 @@ class Row:
 
 def price_key(model: str | None, prices: dict[str, dict[str, float]]) -> str | None:
     """The longest price key that appears in the model name, so a key such as
-    "opus-4" can give an older model its own price next to "opus"."""
+    "opus-4" can give an older model its own price next to "opus". A key
+    covers every name that holds it: "opus-5" also matches claude-opus-5-5,
+    so a point release with another price needs its own key ("opus-5-5")."""
     name = (model or "").lower()
     keys = [k for k in prices if k.lower() in name]
     return max(keys, key=len) if keys else None
@@ -95,9 +97,11 @@ def parse_time(text: str | None) -> datetime | None:
 
 def calls_in(lines: Iterable[str], since: datetime, until: datetime,
              prices: dict[str, dict[str, float]], session: str,
-             seen: dict[str, Call]) -> None:
+             seen: dict[str, Call], unpriced: dict[str, set[str]] | None = None) -> None:
     """Add the calls of one transcript between `since` and `until` to `seen`,
-    keyed by message id, so a call written on several lines counts once."""
+    keyed by message id, so a call written on several lines counts once.
+    A call whose model has no price goes to `unpriced` (model -> call ids),
+    so the view can say what it left out instead of dropping it silently."""
     for n, line in enumerate(lines):
         if '"usage"' not in line:  # cheap test before the JSON parse
             continue
@@ -109,13 +113,19 @@ def calls_in(lines: Iterable[str], since: datetime, until: datetime,
             continue
         msg = o.get("message") or {}
         usage = msg.get("usage") or {}
-        key = price_key(msg.get("model"), prices)
+        model = msg.get("model") or ""
+        key = price_key(model, prices)
         when = parse_time(o.get("timestamp"))
-        if not usage or key is None or when is None or not since <= when <= until:
-            continue  # "<synthetic>" lines and unknown models have no price
+        if not usage or when is None or not since <= when <= until:
+            continue
+        call_id = msg.get("id") or o.get("requestId") or f"{session}:{n}"
+        if key is None:
+            # "<synthetic>" lines are Claude Code's own, not a model call.
+            if unpriced is not None and model and not model.startswith("<"):
+                unpriced.setdefault(model, set()).add(call_id)
+            continue
         written = usage.get("cache_creation_input_tokens") or 0
         read = usage.get("cache_read_input_tokens") or 0
-        call_id = msg.get("id") or o.get("requestId") or f"{session}:{n}"
         seen[call_id] = Call(
             when=when,
             model=key,
@@ -130,9 +140,11 @@ def calls_in(lines: Iterable[str], since: datetime, until: datetime,
 
 
 def read_calls(roots: list[Path], since: datetime, until: datetime,
-               prices: dict[str, dict[str, float]]) -> tuple[list[Call], int]:
+               prices: dict[str, dict[str, float]],
+               unpriced: dict[str, set[str]] | None = None) -> tuple[list[Call], int]:
     """Every call in the window, and how many transcripts were read. A file
-    last written before the window is skipped without being opened."""
+    last written before the window is skipped without being opened. Calls
+    of a model with no price go to `unpriced` (see calls_in)."""
     seen: dict[str, Call] = {}
     files = 0
     cut = since.timestamp()
@@ -142,7 +154,7 @@ def read_calls(roots: list[Path], since: datetime, until: datetime,
                 if f.stat().st_mtime < cut:
                     continue
                 with f.open(encoding="utf-8", errors="replace") as fh:
-                    calls_in(fh, since, until, prices, f.stem, seen)
+                    calls_in(fh, since, until, prices, f.stem, seen, unpriced)
                 files += 1
             except OSError:
                 continue
@@ -196,7 +208,8 @@ def share(part: float, whole: float) -> float:
 
 
 def report(calls: list[Call], agents: list[Agent], since: datetime, until: datetime,
-           big_context: int, rebuild_share: float, files: int = 0) -> dict[str, Any]:
+           big_context: int, rebuild_share: float, files: int = 0,
+           unpriced: dict[str, int] | None = None) -> dict[str, Any]:
     """The numbers of the token pane, as plain data (this is also --json)."""
     rows = attribute(calls, agents)
     total = sum(c.cost for c in calls)
@@ -269,6 +282,7 @@ def report(calls: list[Call], agents: list[Agent], since: datetime, until: datet
         "by_agent": by_agent,
         "levers": levers,
         "no_reader": no_reader,
+        "unpriced": dict(sorted((unpriced or {}).items())),  # model -> calls not counted
     }
 
 

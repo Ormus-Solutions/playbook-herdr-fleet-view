@@ -155,7 +155,7 @@ answer shows its reason in the fleet pane: test the login with
 | Setting | Where | Example |
 |---|---|---|
 | The machines | config, one `[[machines]]` table each | `name = "build-box"` and `ssh = "build-box"` |
-| Prices | config, `[prices.<key>]`; the longest key found in the model name wins | `[prices."opus-4"]` for an older model with another price |
+| Prices | config, `[prices.<key>]`; the longest key found in the model name wins. A key covers every name that holds it: `opus-5` also matches `claude-opus-5-5`. A model with no key is named under the token pane | `[prices."opus-5"]` for Opus 5, with `[prices."opus-5-5"]` next to it so Opus 5.5 keeps its own price |
 | When "today" starts | config, `[spend] day_start` | `day_start = "06:00"` |
 | Where the logs are | config, `[spend] logs` | `logs = ["~/.claude/projects", "/srv/agents/.claude/projects"]` |
 | The lever lines | config, `[spend] big_context` and `rebuild_share` | `big_context = 150000`, `rebuild_share = 0.25` |

@@ -205,7 +205,9 @@ work there, "(no live pane)" when none does (an ended session).
 **A yardstick, not a bill.** Each call is priced at the API list price in
 your config: input, output, cache reads, and cache writes for 5 minutes and
 for 1 hour. With a plan, your real limit is the plan's, but the list price
-still ranks agents and habits by cost. Two levers come from the numbers: a
+still ranks agents and habits by cost. A model with no price in the config
+is named under the pane, with how many of its calls were left out, so a gap
+in the total never hides. Two levers come from the numbers: a
 live agent whose last call read more than 200k tokens (every next call reads
 it all again: `/compact` or `/clear`), and an agent whose cache writes are
 more than 30% of what it read (its cache is rebuilt often).

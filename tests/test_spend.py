@@ -6,8 +6,10 @@ import unittest
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from helpers import DEMO
+from helpers import DEMO, ROOT
 
+import config
+import fleet_view
 import herdr_state
 import spend
 
@@ -58,6 +60,23 @@ class CountOnceTest(unittest.TestCase):
                                    '{"type": "user", "usage": "not json"',
                                    json.dumps({"type": "user", "message": {"usage": {}}})]), [])
 
+    def test_a_model_with_no_price_is_counted_not_dropped(self) -> None:
+        unpriced: dict[str, set[str]] = {}
+        seen: dict[str, spend.Call] = {}
+        unknown = line("m1", "2026-01-15T09:00:00Z", model="claude-new-9")
+        spend.calls_in([unknown, unknown, line("m2", "2026-01-15T10:00:00Z", model="claude-new-9"),
+                        line("m3", "2026-01-15T11:00:00Z", model="<synthetic>"),
+                        line("m4", "2026-01-14T11:00:00Z", model="claude-old-1")],
+                       DAY, NOW, PRICES, "file-stem", seen, unpriced)
+        self.assertEqual(seen, {})
+        self.assertEqual(unpriced, {"claude-new-9": {"m1", "m2"}})  # each call once, in the window
+
+    def test_the_token_view_names_the_models_with_no_price(self) -> None:
+        r = spend.report([], [], DAY, NOW, 200_000, 0.3, unpriced={"claude-new-9": 2})
+        self.assertEqual(r["unpriced"], {"claude-new-9": 2})
+        text = fleet_view.render_spend(r, fleet_view.Paint(False))
+        self.assertIn("No price for claude-new-9 (2 calls)", text)
+
     def test_a_subagent_line_names_its_parent_session(self) -> None:
         [c] = calls_of([line("a", "2026-01-15T09:00:00Z", session="parent")])
         self.assertEqual(c.session, "parent")
@@ -68,6 +87,21 @@ class PriceTest(unittest.TestCase):
         self.assertEqual(spend.price_key("claude-opus-4-8", PRICES), "opus-4")
         self.assertEqual(spend.price_key("claude-opus-5-5", PRICES), "opus")
         self.assertIsNone(spend.price_key("gpt-x", PRICES))
+
+    def test_a_version_key_covers_its_point_releases(self) -> None:
+        # The trap that PLAYBOOK.md "Adapt it" names: a key for Opus 5 also
+        # matches Opus 5.5, so Opus 5.5 needs its own, longer key.
+        prices = {k: PRICES["opus"] for k in ("opus", "opus-5")}
+        self.assertEqual(spend.price_key("claude-opus-5-5", prices), "opus-5")
+        prices["opus-5-5"] = PRICES["opus"]
+        self.assertEqual(spend.price_key("claude-opus-5-5", prices), "opus-5-5")
+        self.assertEqual(spend.price_key("claude-opus-5", prices), "opus-5")
+
+    def test_the_example_config_prices_haiku_4_5_on_its_own(self) -> None:
+        prices = config.load(ROOT / "examples" / "config.example.toml")["prices"]
+        self.assertEqual(spend.price_key("claude-haiku-4-5", prices), "haiku-4-5")
+        self.assertEqual(spend.price_key("claude-haiku-5-5", prices), "haiku")
+        self.assertEqual(prices["haiku-4-5"]["input"], 1.0)
 
     def test_cost_with_the_cache_split(self) -> None:
         usage = {"input_tokens": 1_000_000, "output_tokens": 1_000_000,
