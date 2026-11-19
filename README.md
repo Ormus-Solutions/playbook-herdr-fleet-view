@@ -46,7 +46,7 @@ price, a yardstick, and your provider's usage page is the record.
 
 | Tool | Version | Check |
 |---|---|---|
-| Herdr | 0.9.5 (tested; its snapshot API is protocol 22) | `herdr --version` |
+| [Herdr](https://herdr.dev) | 0.9.5 (tested; its snapshot API is protocol 22) | `herdr --version` |
 | Python | 3.11 or newer, for the view | `python3 --version` |
 | git | any recent version | `git --version` |
 | Linux | for RAM and programs by RAM; macOS shows load and disk only | `uname -s` |
