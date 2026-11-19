@@ -54,7 +54,7 @@ class ParseTest(unittest.TestCase):
         self.assertEqual((a.name, a.tab, a.state), ("w1:p9", "w1:t9", "unknown"))
 
     def test_not_a_snapshot(self) -> None:
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             herdr_state.parse_snapshot({"result": {"type": "pong"}})
 
 

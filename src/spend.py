@@ -25,7 +25,7 @@ import os
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -87,10 +87,10 @@ def parse_time(text: str | None) -> datetime | None:
     if not text:
         return None
     try:
-        t = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        t = datetime.fromisoformat(text)  # Python 3.11 reads a trailing "Z" as UTC
     except ValueError:
         return None
-    return t if t.tzinfo else t.replace(tzinfo=timezone.utc)
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
 
 
 def calls_in(lines: Iterable[str], since: datetime, until: datetime,
@@ -174,7 +174,7 @@ def attribute(calls: list[Call], agents: list[Agent]) -> dict[str, Row]:
         if agent is not None:
             label, space = agent.where, agent.space
         elif here:
-            space = sorted(a.space for a in here)[0]
+            space = min(a.space for a in here)
             label = f"{space} / {Path(c.folder).name} (shared folder)"
         else:
             label, space = f"{NO_PANE} {Path(c.folder).name}", NO_PANE

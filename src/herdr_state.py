@@ -78,7 +78,7 @@ def unwrap(data: dict[str, Any]) -> dict[str, Any]:
     if "snapshot" in data:
         data = data["snapshot"]
     if not isinstance(data.get("workspaces"), list):
-        raise ValueError("this is not a Herdr snapshot (no workspaces list)")
+        raise TypeError("this is not a Herdr snapshot (no workspaces list)")
     return data
 
 
@@ -135,7 +135,7 @@ def ask_herdr(herdr: str = "herdr") -> dict[str, Any]:
     """Run `herdr api snapshot` and return its JSON. It only reads."""
     try:
         done = subprocess.run([herdr, "api", "snapshot"], capture_output=True,
-                              text=True, timeout=TIMEOUT)
+                              text=True, timeout=TIMEOUT, check=False)
     except FileNotFoundError:
         raise RuntimeError(f"'{herdr}' was not found; set [fleet] herdr in the config")
     except subprocess.TimeoutExpired:
@@ -155,7 +155,7 @@ def load_spaces(herdr: str, snapshot_file: str = "") -> tuple[list[Space], str]:
         else:
             data = ask_herdr(herdr)
         return parse_snapshot(data), ""
-    except (OSError, ValueError, KeyError, RuntimeError) as e:
+    except (OSError, ValueError, TypeError, KeyError, RuntimeError) as e:
         return [], str(e) or e.__class__.__name__
 
 
@@ -185,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             data = ask_herdr(args.herdr)
         ids = find(data, args.what, args.label, args.workspace)
-    except (OSError, ValueError, RuntimeError) as e:
+    except (OSError, ValueError, TypeError, RuntimeError) as e:
         print(f"find: {e}", file=sys.stderr)
         return 2
     if len(ids) != 1:

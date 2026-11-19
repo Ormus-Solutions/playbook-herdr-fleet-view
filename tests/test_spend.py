@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import unittest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from helpers import DEMO
@@ -16,7 +16,7 @@ PRICES = {
     "opus-4": {"input": 5.0, "output": 25.0, "cache_read": 0.5, "cache_write_5m": 6.25, "cache_write_1h": 10.0},
     "haiku": {"input": 0.1, "output": 0.5, "cache_read": 0.01, "cache_write_5m": 0.125, "cache_write_1h": 0.2},
 }
-DAY = datetime(2026, 1, 15, tzinfo=timezone.utc)
+DAY = datetime(2026, 1, 15, tzinfo=UTC)
 NOW = DAY.replace(hour=17, minute=30)
 
 
@@ -155,8 +155,8 @@ class DayTest(unittest.TestCase):
 
 class ReadCallsTest(unittest.TestCase):
     def test_a_file_written_before_the_window_is_not_opened(self) -> None:
-        calls, files = spend.read_calls([DEMO / "logs"], datetime.now(timezone.utc) + timedelta(days=1),
-                                        datetime.now(timezone.utc) + timedelta(days=2), PRICES)
+        calls, files = spend.read_calls([DEMO / "logs"], datetime.now(UTC) + timedelta(days=1),
+                                        datetime.now(UTC) + timedelta(days=2), PRICES)
         self.assertEqual((calls, files), ([], 0))
 
     def test_a_missing_folder_reads_nothing(self) -> None:

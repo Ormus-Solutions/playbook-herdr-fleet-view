@@ -254,8 +254,8 @@ def render_spend(r: dict[str, Any], paint: Paint, footer: str = "") -> str:
         paint("Token economy", "bold") + f"  {since:%Y-%m-%d %H:%M} to {until:%H:%M} {zone}".rstrip(),
         paint("API list prices: a yardstick, not a bill. Each call counted once.", "dim"),
         "",
-        f"  ${t['cost']:.2f} today   {plural(t['calls'], 'call')}   "
-        f"{spend.tokens(t['tokens_read'])} tokens read, {t['from_cache']:.0%} from the cache",
+        (f"  ${t['cost']:.2f} today   {plural(t['calls'], 'call')}   "
+         f"{spend.tokens(t['tokens_read'])} tokens read, {t['from_cache']:.0%} from the cache"),
     ]
     if r.get("herdr_error"):
         lines.append("  " + paint(f"Herdr gave no agents, so every call shows by folder: "

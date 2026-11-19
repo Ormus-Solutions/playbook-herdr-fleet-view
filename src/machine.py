@@ -23,14 +23,15 @@ import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any
 
 KIB = 1024
 SSH_TIMEOUT = 20  # seconds for the whole remote probe
 
 
-def meminfo(text: str) -> Dict[str, int]:
+def meminfo(text: str) -> dict[str, int]:
     """/proc/meminfo as bytes per key ("MemTotal: 1024 kB" -> 1048576)."""
     out = {}
     for line in text.splitlines():
@@ -41,7 +42,7 @@ def meminfo(text: str) -> Dict[str, int]:
     return out
 
 
-def process_row(status_text: str) -> Optional[Dict[str, Any]]:
+def process_row(status_text: str) -> dict[str, Any] | None:
     """One process from /proc/PID/status: its name and its three RSS parts.
 
     RSS (resident set size) is the RAM a process maps, in three parts:
@@ -68,7 +69,7 @@ def process_row(status_text: str) -> Optional[Dict[str, Any]]:
     }
 
 
-def program_rows(procs: Iterable[Dict[str, Any]], top: int = 5) -> List[Dict[str, Any]]:
+def program_rows(procs: Iterable[dict[str, Any]], top: int = 5) -> list[dict[str, Any]]:
     """RAM per program (processes with the same name), largest first.
 
     The lesson: a sum of plain RSS counts each shared page once per process.
@@ -81,7 +82,7 @@ def program_rows(procs: Iterable[Dict[str, Any]], top: int = 5) -> List[Dict[str
     they are the kernel's page cache, which it can drop and read again.
     `rss_sum` is the plain sum, kept so the view can show the difference.
     """
-    groups: Dict[str, List[Dict[str, Any]]] = {}
+    groups: dict[str, list[dict[str, Any]]] = {}
     for p in procs:
         groups.setdefault(p["name"], []).append(p)
     rows = []
@@ -96,7 +97,7 @@ def program_rows(procs: Iterable[Dict[str, Any]], top: int = 5) -> List[Dict[str
     return rows[:top]
 
 
-def read_processes(proc: Path = Path("/proc")) -> List[Dict[str, Any]]:
+def read_processes(proc: Path = Path("/proc")) -> list[dict[str, Any]]:
     """Every process this user can read. /proc/PID/status is readable for all."""
     out = []
     for entry in proc.iterdir():
@@ -111,12 +112,12 @@ def read_processes(proc: Path = Path("/proc")) -> List[Dict[str, Any]]:
     return out
 
 
-def probe(top: int = 5) -> Dict[str, Any]:
+def probe(top: int = 5) -> dict[str, Any]:
     """Read this machine. Linux gives everything; other systems give load,
     cores and disk, and say that RAM is not read there."""
     disk = shutil.disk_usage("/")
     load = os.getloadavg() if hasattr(os, "getloadavg") else (0.0, 0.0, 0.0)
-    out: Dict[str, Any] = {
+    out: dict[str, Any] = {
         "ok": True,
         "system": platform.system(),
         "cores": os.cpu_count() or 1,
@@ -146,7 +147,7 @@ def probe(top: int = 5) -> Dict[str, Any]:
     return out
 
 
-def failed(reason: str) -> Dict[str, Any]:
+def failed(reason: str) -> dict[str, Any]:
     return {"ok": False, "error": reason}
 
 
@@ -158,18 +159,18 @@ def short_reason(stderr: str) -> str:
     return text.rsplit(": ", 1)[-1][:60]
 
 
-def ssh_argv(alias: str, top: int) -> List[str]:
+def ssh_argv(alias: str, top: int) -> list[str]:
     """`python3 -` runs the program it reads on stdin; nothing is copied there.
     BatchMode: never stop to ask for a password, the pane cannot answer."""
     return ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", alias,
             "python3", "-", str(int(top))]
 
 
-def read_ssh(alias: str, top: int) -> Dict[str, Any]:
+def read_ssh(alias: str, top: int) -> dict[str, Any]:
     source = Path(__file__).read_text(encoding="utf-8")
     try:
         done = subprocess.run(ssh_argv(alias, top), input=source, capture_output=True,
-                              text=True, timeout=SSH_TIMEOUT)
+                              text=True, timeout=SSH_TIMEOUT, check=False)
     except FileNotFoundError:
         return failed("ssh is not installed")
     except subprocess.TimeoutExpired:
@@ -182,7 +183,7 @@ def read_ssh(alias: str, top: int) -> Dict[str, Any]:
         return failed("the probe did not answer in JSON")
 
 
-def read_file(path: Path) -> Dict[str, Any]:
+def read_file(path: Path) -> dict[str, Any]:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except OSError as e:
@@ -191,7 +192,7 @@ def read_file(path: Path) -> Dict[str, Any]:
         return failed("the file is not JSON")
 
 
-def read_machine(machine: Dict[str, Any], top: int = 5) -> Dict[str, Any]:
+def read_machine(machine: dict[str, Any], top: int = 5) -> dict[str, Any]:
     """One reading for a [[machines]] entry: from a file, over ssh, or here."""
     if machine.get("file"):
         reading = read_file(Path(machine["file"]))
