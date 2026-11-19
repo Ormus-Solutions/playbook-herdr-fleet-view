@@ -112,8 +112,13 @@ It prints `started in` and a pane id. `no new tab:` and a tab id means the
 tab is there from an earlier run: go on to the Verify. `no new tab:` and a
 `find:` line says what is wrong; see "After a restart".
 
-Verify: `herdr pane read "$(python3 src/herdr_state.py find pane fleet)" --source visible | grep -c '^Fleet '`
-Expected: `1`
+Verify: `herdr pane wait-output "$(python3 src/herdr_state.py find pane fleet)" --match 'Fleet ' --timeout 20000 >/dev/null && herdr pane read "$(python3 src/herdr_state.py find pane fleet)" --source visible | grep -c '^Fleet '`
+Expected: `1`. `herdr pane run` returns when Herdr has taken the command, not
+when the view has drawn, so the check first waits up to 20 seconds for the
+view's first line (the first draw of the token view reads every transcript
+of today). If it prints nothing, the wait ran out: run
+`herdr pane read "$(python3 src/herdr_state.py find pane fleet)" --source recent`
+to see what the pane shows instead.
 
 ### 6. Split it to the right for the token pane
 
@@ -126,8 +131,8 @@ The same guard: it splits only when no pane is labelled `tokens` yet.
 found=$(python3 src/herdr_state.py find pane tokens 2>&1); case "$found" in "find: 0 panes"*) pane=$(herdr pane split "$(python3 src/herdr_state.py find pane fleet)" --direction right --ratio 0.55 --cwd "$PWD" --no-focus | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["pane"]["pane_id"])') && herdr pane rename "$pane" tokens >/dev/null && herdr pane run "$pane" "python3 src/fleet_view.py spend" >/dev/null && echo "started in $pane";; *) echo "no new pane: $found";; esac
 ```
 
-Verify: `herdr pane read "$(python3 src/herdr_state.py find pane tokens)" --source visible | grep -c '^Token economy'`
-Expected: `1`
+Verify: `herdr pane wait-output "$(python3 src/herdr_state.py find pane tokens)" --match 'Token economy' --timeout 20000 >/dev/null && herdr pane read "$(python3 src/herdr_state.py find pane tokens)" --source visible | grep -c '^Token economy'`
+Expected: `1`. The same wait as in step 5.
 
 ### 7. Optional: an agent under the token pane that reviews the spend
 
