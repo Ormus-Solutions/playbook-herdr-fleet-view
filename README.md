@@ -57,6 +57,11 @@ price, a yardstick, and your provider's usage page is the record.
 
 ### Hand it to your agent
 
+```bash
+git clone https://github.com/Ormus-Solutions/playbook-herdr-fleet-view
+cd playbook-herdr-fleet-view
+```
+
 Clone this repo, open your coding agent (Claude Code, Codex, Grok) inside a
 Herdr pane in the clone, and paste this:
 
