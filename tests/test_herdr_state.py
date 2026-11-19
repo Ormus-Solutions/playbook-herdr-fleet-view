@@ -4,7 +4,9 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import tempfile
 import unittest
+from pathlib import Path
 
 from helpers import DEMO
 
@@ -84,6 +86,27 @@ class FindTest(unittest.TestCase):
             code = herdr_state.main(["find", "pane", "fleet", "--workspace", "w4",
                                      "--snapshot", str(DEMO / "snapshot.json")])
         self.assertEqual((code, out.getvalue()), (0, "w4:p8\n"))
+
+    def test_a_pane_in_one_tab(self) -> None:
+        # Undo closes the Fleet tab only when the fleet pane is in it.
+        self.assertEqual(herdr_state.find(SNAPSHOT, "pane", "fleet", tab="w4:t6"), ["w4:p8"])
+        self.assertEqual(herdr_state.find(SNAPSHOT, "pane", "fleet", tab="w1:t1"), [])
+
+    def test_two_matches_are_named(self) -> None:
+        # A second run of step 5 makes a second Fleet tab: the error names
+        # both, so the person can close the one they do not want.
+        snap = json.loads(json.dumps(SNAPSHOT))
+        tabs = snap["result"]["snapshot"]["tabs"]
+        tabs.append({**tabs[-1], "tab_id": "w4:t7", "number": 7})
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err), tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "snapshot.json"
+            path.write_text(json.dumps(snap), encoding="utf-8")
+            code = herdr_state.main(["find", "tab", "Fleet", "--workspace", "w4",
+                                     "--snapshot", str(path)])
+        self.assertEqual(code, 1)
+        self.assertEqual(err.getvalue(),
+                         "find: 2 tabs are labelled 'Fleet' (w4:t6, w4:t7); expected 1\n")
 
     def test_the_command_fails_when_nothing_matches(self) -> None:
         err = io.StringIO()

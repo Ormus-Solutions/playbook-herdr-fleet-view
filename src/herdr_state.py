@@ -22,6 +22,7 @@ next):
 
     python3 src/herdr_state.py find pane fleet
     python3 src/herdr_state.py find tab Fleet
+    python3 src/herdr_state.py find pane fleet --tab w1:t2   (only in that tab)
 """
 from __future__ import annotations
 
@@ -159,13 +160,16 @@ def load_spaces(herdr: str, snapshot_file: str = "") -> tuple[list[Space], str]:
         return [], str(e) or e.__class__.__name__
 
 
-def find(data: dict[str, Any], what: str, label: str, workspace: str = "") -> list[str]:
-    """The ids of the panes or tabs with this label, in one workspace or all."""
+def find(data: dict[str, Any], what: str, label: str, workspace: str = "",
+         tab: str = "") -> list[str]:
+    """The ids of the panes or tabs with this label, in one workspace or all,
+    and (for panes) in one tab or all."""
     snap = unwrap(data)
     items = snap.get("panes" if what == "pane" else "tabs", [])
     key = "pane_id" if what == "pane" else "tab_id"
     return [i[key] for i in items
-            if i.get("label") == label and (not workspace or i.get("workspace_id") == workspace)]
+            if i.get("label") == label and (not workspace or i.get("workspace_id") == workspace)
+            and (not tab or i.get("tab_id") == tab)]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -176,6 +180,7 @@ def main(argv: list[str] | None = None) -> int:
     f.add_argument("label")
     f.add_argument("--workspace", default=os.environ.get("HERDR_WORKSPACE_ID", ""),
                    help="only this workspace (default: the one this pane is in)")
+    f.add_argument("--tab", default="", help="only panes in this tab (a tab id)")
     f.add_argument("--herdr", default="herdr", help="the herdr command")
     f.add_argument("--snapshot", default="", help="read a saved snapshot instead")
     args = parser.parse_args(argv)
@@ -184,12 +189,13 @@ def main(argv: list[str] | None = None) -> int:
             data = json.loads(Path(args.snapshot).read_text(encoding="utf-8"))
         else:
             data = ask_herdr(args.herdr)
-        ids = find(data, args.what, args.label, args.workspace)
+        ids = find(data, args.what, args.label, args.workspace, args.tab)
     except (OSError, ValueError, TypeError, RuntimeError) as e:
         print(f"find: {e}", file=sys.stderr)
         return 2
     if len(ids) != 1:
-        print(f"find: {len(ids)} {args.what}s are labelled '{args.label}'; expected 1",
+        named = f" ({', '.join(ids)})" if ids else ""
+        print(f"find: {len(ids)} {args.what}s are labelled '{args.label}'{named}; expected 1",
               file=sys.stderr)
         return 1
     print(ids[0])

@@ -25,6 +25,7 @@ shows what the agents spent today. Both refresh on their own and only read.
 | Herdr 0.9.5 or newer, on this shell's PATH | `herdr --version` | `herdr 0.9.5` or a newer version | Install or update Herdr (`herdr update`, or herdr.dev). On `command not found`, add Herdr's folder to the PATH in your shell's startup file and open a new pane: the steps run `herdr` by name. |
 | Python 3.11 or newer | `python3 -c 'import sys; print(sys.version_info >= (3, 11))'` | `True` | Install a newer Python from python.org or your package manager. |
 | You are in this repo | `test -f src/fleet_view.py && echo here` | `here` | `cd` into the clone of this repo. |
+| No tab is labelled `Fleet` yet | `python3 src/herdr_state.py find tab Fleet; echo "exit $?"` | `find: 0 tabs are labelled 'Fleet'; expected 1` and `exit 1` | If an earlier run of this playbook made it (its panes are labelled `fleet` and `tokens`), see "After a restart" or "Undo". Else stop and ask the person to rename their tab: Undo closes the tab labelled `Fleet`, so it must be the one these steps make. |
 | Claude Code logs, for the token pane | `test -d ~/.claude/projects && echo logs` | `logs` | The token pane will show $0.00. That is fine if you use other agents; see "Adapt it". |
 
 ## Steps
@@ -195,9 +196,14 @@ both views ended). If step 7 started an agent there, closing the tab ends that
 agent's session too, so ask the person first.
 
 ```bash
-herdr tab close "$(python3 src/herdr_state.py find tab Fleet)"
+tab=$(python3 src/herdr_state.py find tab Fleet) && python3 src/herdr_state.py find pane fleet --tab "$tab" >/dev/null && herdr tab close "$tab"
 rm -r ~/.config/playbook-herdr-fleet-view
 ```
+
+The first line closes the tab only when it holds the pane labelled `fleet`,
+so a tab these steps did not make is never closed. If it prints
+`find: 0 panes are labelled 'fleet'; expected 1`, the tab labelled `Fleet`
+is not this playbook's: stop and ask the person.
 
 Verify: `python3 src/herdr_state.py find tab Fleet; echo "exit $?"`
 Expected: `find: 0 tabs are labelled 'Fleet'; expected 1` and `exit 1`.
