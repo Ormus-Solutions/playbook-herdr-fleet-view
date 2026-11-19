@@ -95,15 +95,22 @@ tell the person; the step may need to run outside the sandbox.
 
 ### 5. Make the Fleet tab and start the fleet pane
 
-One command line, in three parts. `herdr tab create` makes the tab and answers
-in JSON; Python takes the id of the tab's first pane from it. `herdr pane
+One command line. It first asks `find` whether a Fleet tab is there, and
+makes one only when `find` counts 0. This is called a guard: the step can
+run twice and still leaves one tab, so a second try after a failed Verify is
+safe. Then three parts. `herdr tab create` makes the tab and answers in
+JSON; Python takes the id of the tab's first pane from it. `herdr pane
 rename` labels that pane `fleet`, so the next steps can find it by name (a
 shell variable does not live from one step to the next in most agents'
 shells). `herdr pane run` types the command into the pane's shell.
 
 ```bash
-pane=$(herdr tab create --workspace "$HERDR_WORKSPACE_ID" --label Fleet --cwd "$PWD" --no-focus | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["root_pane"]["pane_id"])') && herdr pane rename "$pane" fleet >/dev/null && herdr pane run "$pane" "python3 src/fleet_view.py fleet" >/dev/null && echo "started in $pane"
+found=$(python3 src/herdr_state.py find tab Fleet 2>&1); case "$found" in "find: 0 tabs"*) pane=$(herdr tab create --workspace "$HERDR_WORKSPACE_ID" --label Fleet --cwd "$PWD" --no-focus | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["root_pane"]["pane_id"])') && herdr pane rename "$pane" fleet >/dev/null && herdr pane run "$pane" "python3 src/fleet_view.py fleet" >/dev/null && echo "started in $pane";; *) echo "no new tab: $found";; esac
 ```
+
+It prints `started in` and a pane id. `no new tab:` and a tab id means the
+tab is there from an earlier run: go on to the Verify. `no new tab:` and a
+`find:` line says what is wrong; see "After a restart".
 
 Verify: `herdr pane read "$(python3 src/herdr_state.py find pane fleet)" --source visible | grep -c '^Fleet '`
 Expected: `1`
@@ -113,8 +120,10 @@ Expected: `1`
 `--ratio 0.55` keeps 55% of the width for the fleet pane, the pane that is
 split; the token pane gets the rest.
 
+The same guard: it splits only when no pane is labelled `tokens` yet.
+
 ```bash
-pane=$(herdr pane split "$(python3 src/herdr_state.py find pane fleet)" --direction right --ratio 0.55 --cwd "$PWD" --no-focus | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["pane"]["pane_id"])') && herdr pane rename "$pane" tokens >/dev/null && herdr pane run "$pane" "python3 src/fleet_view.py spend" >/dev/null && echo "started in $pane"
+found=$(python3 src/herdr_state.py find pane tokens 2>&1); case "$found" in "find: 0 panes"*) pane=$(herdr pane split "$(python3 src/herdr_state.py find pane fleet)" --direction right --ratio 0.55 --cwd "$PWD" --no-focus | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["pane"]["pane_id"])') && herdr pane rename "$pane" tokens >/dev/null && herdr pane run "$pane" "python3 src/fleet_view.py spend" >/dev/null && echo "started in $pane";; *) echo "no new pane: $found";; esac
 ```
 
 Verify: `herdr pane read "$(python3 src/herdr_state.py find pane tokens)" --source visible | grep -c '^Token economy'`
@@ -128,7 +137,7 @@ the numbers and judge them. Use the command of the agent the person uses
 (`claude`, `codex`, `grok`).
 
 ```bash
-pane=$(herdr pane split "$(python3 src/herdr_state.py find pane tokens)" --direction down --ratio 0.6 --cwd "$PWD" --no-focus | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["pane"]["pane_id"])') && herdr pane rename "$pane" ask >/dev/null && herdr pane run "$pane" "claude" >/dev/null && echo "started in $pane"
+found=$(python3 src/herdr_state.py find pane ask 2>&1); case "$found" in "find: 0 panes"*) pane=$(herdr pane split "$(python3 src/herdr_state.py find pane tokens)" --direction down --ratio 0.6 --cwd "$PWD" --no-focus | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"]["pane"]["pane_id"])') && herdr pane rename "$pane" ask >/dev/null && herdr pane run "$pane" "claude" >/dev/null && echo "started in $pane";; *) echo "no new pane: $found";; esac
 ```
 
 Then the person types this into that agent, when they want a review:
@@ -188,6 +197,29 @@ And `clock` is only for the demo and the tests; leave it out.
 - `herdr pane read "$(python3 src/herdr_state.py find pane fleet)" --source visible | grep -c '^Fleet '` prints `1`.
 - `herdr pane read "$(python3 src/herdr_state.py find pane tokens)" --source visible | grep -c '^Token economy'` prints `1`.
 - The person looked at the Fleet tab and saw their own spaces and agents in it.
+
+## After a restart
+
+A restart of Herdr or of the machine can leave the Fleet tab with a shell
+prompt where a view was. Start each view again in its own pane:
+
+```bash
+herdr pane run "$(python3 src/herdr_state.py find pane fleet)" "python3 src/fleet_view.py fleet"
+herdr pane run "$(python3 src/herdr_state.py find pane tokens)" "python3 src/fleet_view.py spend"
+```
+
+Verify: the two `herdr pane read` checks of "Done when".
+
+When `find` prints something else:
+
+- `0 tabs are labelled 'Fleet'`: the tab did not come back. Run steps 5 and 6 again.
+- `0 panes are labelled 'fleet'` while the tab is there: its pane labels did
+  not come back. With the person's yes, close the tab
+  (`herdr tab close "$(python3 src/herdr_state.py find tab Fleet)"`), then
+  run steps 5 and 6 again.
+- `2 tabs are labelled 'Fleet' (w1:t3, w1:t5)`: a step made a second tab.
+  When "Before you start" passed, both are this playbook's: close one with
+  `herdr tab close w1:t5` (its id from the line).
 
 ## Undo
 
