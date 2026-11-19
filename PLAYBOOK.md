@@ -122,8 +122,13 @@ to see what the pane shows instead.
 
 ### 6. Split it to the right for the token pane
 
-`--ratio 0.55` keeps 55% of the width for the fleet pane, the pane that is
-split; the token pane gets the rest.
+`--ratio 0.55` asks for a 55 to 45 split of the width. Herdr's help and its
+API schema (Herdr 0.9.5) do not say which side the number sizes. This step
+expects the fleet pane, the pane that is split, to keep the 55%; that was
+not measured. Look at the tab after the step: if the token pane came out the
+wider one, close it with
+`herdr pane close "$(python3 src/herdr_state.py find pane tokens)"` and run
+the step again with `--ratio 0.45`.
 
 The same guard: it splits only when no pane is labelled `tokens` yet.
 
@@ -187,7 +192,7 @@ answer shows its reason in the fleet pane: test the login with
 | Programs shown per machine | config, `[fleet] top_programs` | `top_programs = 5` |
 | The Herdr command the views run | config, `[fleet] herdr`; the steps use `herdr` from the PATH | the full path from `command -v herdr`, for a pane whose PATH has no Herdr |
 | Which workspace gets the tab | the pane you run the steps in: the tab goes to that pane's workspace. Do not change `--workspace` in step 5: `find` looks only in the workspace of the pane it runs in (`HERDR_WORKSPACE_ID`), so the later steps would not find the tab | open a pane in the other workspace, `cd` into this repo there, and run the steps from that pane |
-| Pane sizes | `--ratio` in steps 6 and 7 | `--ratio 0.6` keeps 60% for the pane that is split |
+| Pane sizes | `--ratio` in steps 6 and 7; step 6 says how to check which side it sizes | `--ratio 0.6` for a 60 to 40 split |
 | Another agent's logs | `src/spend.py`: a reader that builds `Call` records, like `calls_in` | a reader for Codex's session logs, with `READER_KIND = "codex"` |
 | A different config file | `--config` on each command | `python3 src/fleet_view.py fleet --config ~/fleet-home.toml` |
 
