@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "system": "Linux",
+  "cores": 16,
+  "load": [
+    3.2,
+    2.9,
+    2.5
+  ],
+  "disk_total": 1979120929996,
+  "disk_used": 813638604554,
+  "uptime": 273720,
+  "mem_total": 68719476736,
+  "mem_available": 42412802048,
+  "swap_total": 8589934592,
+  "swap_free": 7516192768,
+  "programs": [
+    {
+      "name": "node",
+      "count": 40,
+      "ram": 1176502272,
+      "rss_sum": 3145728000
+    },
+    {
+      "name": "postgres",
+      "count": 12,
+      "ram": 662700032,
+      "rss_sum": 6668943360
+    },
+    {
+      "name": "python3",
+      "count": 3,
+      "ram": 409468928,
+      "rss_sum": 429391872
+    }
+  ],
+  "note": ""
+}

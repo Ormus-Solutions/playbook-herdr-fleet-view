@@ -3,4 +3,4 @@
 # The output must match examples/expected-output.txt (a test checks it).
 set -euo pipefail
 cd "$(dirname "$0")/.."
-python3 src/tool.py --demo
+python3 src/fleet_view.py --demo

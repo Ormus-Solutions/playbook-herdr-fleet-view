@@ -1,6 +1,63 @@
-# Example config. Copy it to ~/.config/playbook-herdr-fleet-view/config.toml and change it.
-# The tool reads only this file for its settings: no hosts or paths in the code.
+# Fleet view settings. Copy this file to
+#   ~/.config/playbook-herdr-fleet-view/config.toml
+# and change it. The code holds no host names and no paths: they all come
+# from here. A path may start with ~ ; a relative path is read from the
+# folder of this file.
 
-title = "acme-web board"
-lanes = ["api", "web", "docs"]
-states = ["open", "done"]
+[fleet]
+herdr = "herdr"        # the Herdr command; the view runs `herdr api snapshot`
+interval = 10          # seconds between redraws of the fleet pane
+top_programs = 3       # programs by RAM shown under each machine
+
+# One [[machines]] table per machine. With no "ssh" key it is the machine the
+# view runs on, read from /proc.
+[[machines]]
+name = "local"
+
+# A machine you reach with ssh. The alias comes from your ~/.ssh/config, the
+# login must work with no password prompt (a key), and the machine needs
+# python3 (3.9 or newer). Nothing is installed there: the probe goes over
+# ssh on stdin each time.
+# [[machines]]
+# name = "build-box"
+# ssh = "build-box"
+
+[spend]
+logs = ["~/.claude/projects"]   # Claude Code writes one transcript per session here
+day_start = "00:00"             # "today" starts here, in this machine's time zone
+interval = 60                   # seconds between redraws of the token pane
+big_context = 200000            # a live agent whose last call read more gets a lever
+rebuild_share = 0.30            # cache writes above this share of the tokens read get a lever
+
+# USD per million tokens, matched against the model name: the longest key
+# that appears in it wins. These are the API list prices of the current
+# models when this was written (2026-11): check the provider's price page.
+# For an older model with another price, add a longer key, for example
+# [prices."opus-4"] next to [prices.opus].
+[prices.fable]
+input = 8.0
+output = 40.0
+cache_read = 0.20
+cache_write_5m = 10.0
+cache_write_1h = 16.0
+
+[prices.opus]
+input = 4.0
+output = 20.0
+cache_read = 0.20
+cache_write_5m = 5.0
+cache_write_1h = 8.0
+
+[prices.sonnet]
+input = 2.0
+output = 10.0
+cache_read = 0.10
+cache_write_5m = 2.5
+cache_write_1h = 4.0
+
+[prices.haiku]
+input = 0.10
+output = 0.50
+cache_read = 0.01
+cache_write_5m = 0.125
+cache_write_1h = 0.20

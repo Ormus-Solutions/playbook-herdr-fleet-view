@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "system": "Linux",
+  "cores": 32,
+  "load": [
+    21.5,
+    18.0,
+    12.4
+  ],
+  "disk_total": 2199023255552,
+  "disk_used": 2089072092774,
+  "uptime": 1040700,
+  "mem_total": 137438953472,
+  "mem_available": 32212254720,
+  "swap_total": 0,
+  "swap_free": 0,
+  "programs": [
+    {
+      "name": "java",
+      "count": 2,
+      "ram": 9441378304,
+      "rss_sum": 9571401728
+    },
+    {
+      "name": "cc1plus",
+      "count": 16,
+      "ram": 3019898880,
+      "rss_sum": 3221225472
+    },
+    {
+      "name": "node",
+      "count": 120,
+      "ram": 2769289216,
+      "rss_sum": 8556380160
+    }
+  ],
+  "note": ""
+}

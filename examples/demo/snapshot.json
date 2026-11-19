@@ -1,0 +1,370 @@
+{
+  "id": "cli:api:snapshot",
+  "result": {
+    "type": "session_snapshot",
+    "snapshot": {
+      "version": "0.9.5",
+      "protocol": 22,
+      "focused_workspace_id": "w4",
+      "focused_tab_id": "w4:t6",
+      "focused_pane_id": "w4:p8",
+      "workspaces": [
+        {
+          "workspace_id": "w1",
+          "number": 1,
+          "label": "acme-web",
+          "tab_count": 2,
+          "pane_count": 3,
+          "agent_status": "blocked"
+        },
+        {
+          "workspace_id": "w2",
+          "number": 2,
+          "label": "demo-api",
+          "tab_count": 2,
+          "pane_count": 3,
+          "agent_status": "working"
+        },
+        {
+          "workspace_id": "w3",
+          "number": 3,
+          "label": "notes",
+          "tab_count": 1,
+          "pane_count": 1,
+          "agent_status": "idle"
+        },
+        {
+          "workspace_id": "w4",
+          "number": 4,
+          "label": "system",
+          "tab_count": 1,
+          "pane_count": 3,
+          "agent_status": "idle"
+        }
+      ],
+      "tabs": [
+        {
+          "tab_id": "w1:t1",
+          "workspace_id": "w1",
+          "number": 1,
+          "label": "build",
+          "pane_count": 2,
+          "focused": false,
+          "agent_status": "unknown"
+        },
+        {
+          "tab_id": "w1:t2",
+          "workspace_id": "w1",
+          "number": 2,
+          "label": "docs",
+          "pane_count": 1,
+          "focused": false,
+          "agent_status": "unknown"
+        },
+        {
+          "tab_id": "w2:t3",
+          "workspace_id": "w2",
+          "number": 1,
+          "label": "main",
+          "pane_count": 2,
+          "focused": false,
+          "agent_status": "unknown"
+        },
+        {
+          "tab_id": "w2:t4",
+          "workspace_id": "w2",
+          "number": 2,
+          "label": "shell",
+          "pane_count": 1,
+          "focused": false,
+          "agent_status": "unknown"
+        },
+        {
+          "tab_id": "w3:t5",
+          "workspace_id": "w3",
+          "number": 1,
+          "label": "inbox",
+          "pane_count": 1,
+          "focused": false,
+          "agent_status": "unknown"
+        },
+        {
+          "tab_id": "w4:t6",
+          "workspace_id": "w4",
+          "number": 1,
+          "label": "Fleet",
+          "pane_count": 3,
+          "focused": false,
+          "agent_status": "unknown"
+        }
+      ],
+      "panes": [
+        {
+          "pane_id": "w1:p1",
+          "terminal_id": "term_demo01",
+          "workspace_id": "w1",
+          "tab_id": "w1:t1",
+          "focused": false,
+          "agent_status": "working",
+          "cwd": "/work/acme-web/api",
+          "foreground_cwd": "/work/acme-web/api",
+          "revision": 1,
+          "label": "api",
+          "agent": "claude"
+        },
+        {
+          "pane_id": "w1:p2",
+          "terminal_id": "term_demo02",
+          "workspace_id": "w1",
+          "tab_id": "w1:t1",
+          "focused": false,
+          "agent_status": "blocked",
+          "cwd": "/work/acme-web/web",
+          "foreground_cwd": "/work/acme-web/web",
+          "revision": 1,
+          "label": "web",
+          "agent": "codex"
+        },
+        {
+          "pane_id": "w1:p3",
+          "terminal_id": "term_demo03",
+          "workspace_id": "w1",
+          "tab_id": "w1:t2",
+          "focused": false,
+          "agent_status": "done",
+          "cwd": "/work/acme-web/docs",
+          "foreground_cwd": "/work/acme-web/docs",
+          "revision": 1,
+          "label": "docs",
+          "agent": "claude"
+        },
+        {
+          "pane_id": "w2:p4",
+          "terminal_id": "term_demo04",
+          "workspace_id": "w2",
+          "tab_id": "w2:t3",
+          "focused": false,
+          "agent_status": "working",
+          "cwd": "/work/demo-api",
+          "foreground_cwd": "/work/demo-api",
+          "revision": 1,
+          "label": "worker",
+          "agent": "claude"
+        },
+        {
+          "pane_id": "w2:p5",
+          "terminal_id": "term_demo05",
+          "workspace_id": "w2",
+          "tab_id": "w2:t3",
+          "focused": false,
+          "agent_status": "idle",
+          "cwd": "/work/demo-api/review",
+          "foreground_cwd": "/work/demo-api/review",
+          "revision": 1,
+          "label": "review",
+          "agent": "claude"
+        },
+        {
+          "pane_id": "w2:p6",
+          "terminal_id": "term_demo06",
+          "workspace_id": "w2",
+          "tab_id": "w2:t4",
+          "focused": false,
+          "agent_status": "unknown",
+          "cwd": "/work/demo-api",
+          "foreground_cwd": "/work/demo-api",
+          "revision": 1
+        },
+        {
+          "pane_id": "w3:p7",
+          "terminal_id": "term_demo07",
+          "workspace_id": "w3",
+          "tab_id": "w3:t5",
+          "focused": false,
+          "agent_status": "idle",
+          "cwd": "/work/notes",
+          "foreground_cwd": "/work/notes",
+          "revision": 1,
+          "label": "writer",
+          "agent": "grok"
+        },
+        {
+          "pane_id": "w4:p8",
+          "terminal_id": "term_demo08",
+          "workspace_id": "w4",
+          "tab_id": "w4:t6",
+          "focused": false,
+          "agent_status": "unknown",
+          "cwd": "/work/playbook-herdr-fleet-view",
+          "foreground_cwd": "/work/playbook-herdr-fleet-view",
+          "revision": 1,
+          "label": "fleet"
+        },
+        {
+          "pane_id": "w4:p9",
+          "terminal_id": "term_demo09",
+          "workspace_id": "w4",
+          "tab_id": "w4:t6",
+          "focused": false,
+          "agent_status": "unknown",
+          "cwd": "/work/playbook-herdr-fleet-view",
+          "foreground_cwd": "/work/playbook-herdr-fleet-view",
+          "revision": 1,
+          "label": "tokens"
+        },
+        {
+          "pane_id": "w4:p10",
+          "terminal_id": "term_demo10",
+          "workspace_id": "w4",
+          "tab_id": "w4:t6",
+          "focused": false,
+          "agent_status": "idle",
+          "cwd": "/work/playbook-herdr-fleet-view",
+          "foreground_cwd": "/work/playbook-herdr-fleet-view",
+          "revision": 1,
+          "label": "ask",
+          "agent": "claude"
+        }
+      ],
+      "layouts": [],
+      "agents": [
+        {
+          "terminal_id": "term_demo01",
+          "workspace_id": "w1",
+          "tab_id": "w1:t1",
+          "pane_id": "w1:p1",
+          "agent": "claude",
+          "name": null,
+          "agent_status": "working",
+          "agent_session": {
+            "source": "herdr:claude",
+            "agent": "claude",
+            "kind": "id",
+            "value": "0b8c1f2e-5a1d-4c3e-9f00-1a2b3c4d5e01"
+          },
+          "cwd": "/work/acme-web/api",
+          "foreground_cwd": "/work/acme-web/api",
+          "focused": false,
+          "revision": 1,
+          "interactive_ready": true,
+          "launch_pending": false,
+          "state_labels": {},
+          "tokens": {}
+        },
+        {
+          "terminal_id": "term_demo02",
+          "workspace_id": "w1",
+          "tab_id": "w1:t1",
+          "pane_id": "w1:p2",
+          "agent": "codex",
+          "name": null,
+          "agent_status": "blocked",
+          "agent_session": null,
+          "cwd": "/work/acme-web/web",
+          "foreground_cwd": "/work/acme-web/web",
+          "focused": false,
+          "revision": 1,
+          "interactive_ready": true,
+          "launch_pending": false,
+          "state_labels": {},
+          "tokens": {}
+        },
+        {
+          "terminal_id": "term_demo03",
+          "workspace_id": "w1",
+          "tab_id": "w1:t2",
+          "pane_id": "w1:p3",
+          "agent": "claude",
+          "name": null,
+          "agent_status": "done",
+          "agent_session": null,
+          "cwd": "/work/acme-web/docs",
+          "foreground_cwd": "/work/acme-web/docs",
+          "focused": false,
+          "revision": 1,
+          "interactive_ready": true,
+          "launch_pending": false,
+          "state_labels": {},
+          "tokens": {}
+        },
+        {
+          "terminal_id": "term_demo04",
+          "workspace_id": "w2",
+          "tab_id": "w2:t3",
+          "pane_id": "w2:p4",
+          "agent": "claude",
+          "name": null,
+          "agent_status": "working",
+          "agent_session": {
+            "source": "herdr:claude",
+            "agent": "claude",
+            "kind": "path",
+            "value": "/work/.claude/projects/-work-demo-api/0b8c1f2e-5a1d-4c3e-9f00-1a2b3c4d5e03.jsonl"
+          },
+          "cwd": "/work/demo-api",
+          "foreground_cwd": "/work/demo-api",
+          "focused": false,
+          "revision": 1,
+          "interactive_ready": true,
+          "launch_pending": false,
+          "state_labels": {},
+          "tokens": {}
+        },
+        {
+          "terminal_id": "term_demo05",
+          "workspace_id": "w2",
+          "tab_id": "w2:t3",
+          "pane_id": "w2:p5",
+          "agent": "claude",
+          "name": null,
+          "agent_status": "idle",
+          "agent_session": null,
+          "cwd": "/work/demo-api/review",
+          "foreground_cwd": "/work/demo-api/review",
+          "focused": false,
+          "revision": 1,
+          "interactive_ready": true,
+          "launch_pending": false,
+          "state_labels": {},
+          "tokens": {}
+        },
+        {
+          "terminal_id": "term_demo07",
+          "workspace_id": "w3",
+          "tab_id": "w3:t5",
+          "pane_id": "w3:p7",
+          "agent": "grok",
+          "name": null,
+          "agent_status": "idle",
+          "agent_session": null,
+          "cwd": "/work/notes",
+          "foreground_cwd": "/work/notes",
+          "focused": false,
+          "revision": 1,
+          "interactive_ready": true,
+          "launch_pending": false,
+          "state_labels": {},
+          "tokens": {}
+        },
+        {
+          "terminal_id": "term_demo10",
+          "workspace_id": "w4",
+          "tab_id": "w4:t6",
+          "pane_id": "w4:p10",
+          "agent": "claude",
+          "name": null,
+          "agent_status": "idle",
+          "agent_session": null,
+          "cwd": "/work/playbook-herdr-fleet-view",
+          "foreground_cwd": "/work/playbook-herdr-fleet-view",
+          "focused": false,
+          "revision": 1,
+          "interactive_ready": true,
+          "launch_pending": false,
+          "state_labels": {},
+          "tokens": {}
+        }
+      ]
+    }
+  }
+}

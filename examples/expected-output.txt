@@ -1,6 +1,64 @@
-acme-web board
-lane   open  done
-api       2     1
-web       1     2
-docs      0     1
-other     1     0
+Fleet  17:30:00   4 spaces, 7 agents: 1 blocked, 1 waiting, 2 working, 3 idle
+Needs you: acme-web / build / web (blocked), acme-web / docs / docs (waiting)
+
+Spaces
+  acme-web       3 agents   1 blocked  1 waiting  1 working
+    build / api              claude   working
+    build / web              codex    blocked
+    docs / docs              claude   waiting
+  demo-api       2 agents   1 working  1 idle
+    main / worker            claude   working
+    main / review            claude   idle
+  notes          1 agent    1 idle
+    inbox / writer           grok     idle
+  system         1 agent    1 idle
+    Fleet / ask              claude   idle
+
+Machines
+  local         16 cores, up 3d04h
+    load  ███░░░░░░░░░░░░░   20%   3.2 now, 2.5 over 15 min
+    RAM   ██████░░░░░░░░░░   38%   24.5G of 64.0G, swap 1.0G used
+    disk  ███████░░░░░░░░░   41%   758G of 1.8T
+    RAM by program        own + shared once   plain RSS sum
+      node x40                         1.1G            2.9G
+      postgres x12                     632M            6.2G
+      python3 x3                       390M            410M
+  build-box     32 cores, up 12d01h
+    load  ███████████░░░░░   67%   21.5 now, 12.4 over 15 min
+    RAM   ████████████░░░░   77%   98.0G of 128G, no swap
+    disk  ███████████████░   95%   1.9T of 2.0T
+    RAM by program        own + shared once   plain RSS sum
+      java x2                          8.8G            8.9G
+      cc1plus x16                      2.8G            3.0G
+      node x120                        2.6G            8.0G
+  gpu-box       no answer: Connection timed out
+
+Token economy  2026-01-15 00:00 to 17:30 UTC
+API list prices: a yardstick, not a bill. Each call counted once.
+
+  $4.59 today   51 calls   4.0M tokens read, 90% from the cache
+
+By space          spend  share  calls  each hour from 00:00
+  demo-api         $2.23    49%     19  ········██··█▄▂▅▅▅
+  acme-web         $1.97    43%     25  ·········▇▅▆▂▂▄▅▆▃
+  system           $0.05     1%      2  ················▁▁
+  (no live pane)   $0.34     7%      5  ·······▄▃·········
+
+By agent                    model     spend  calls  read/call  writes
+  demo-api / main / worker  opus       $2.15     16        38k     42%
+  acme-web / build / api    opus       $1.75     17       154k      4%
+  acme-web / docs / docs    sonnet     $0.22      8        42k      6%
+  demo-api / main / review  sonnet     $0.08      3        37k      8%
+  system / Fleet / ask      sonnet     $0.05      2        19k     22%
+  (no live pane) old-app    opus       $0.34      5        59k      8%
+  read/call: tokens each call read. writes: their share written to the cache.
+
+Levers
+  - demo-api / main / worker: 42% of the tokens it read were cache writes, so
+    its cache is rebuilt often (a pause longer than the cache lifetime, or a
+    prompt start that changes).
+  - acme-web / build / api: its last call read 218k tokens. /compact or /clear
+    makes each next call cheaper.
+
+Read 7 Claude Code transcripts. No reader yet for codex, grok, so their spend
+is not shown.
