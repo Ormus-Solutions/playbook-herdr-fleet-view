@@ -22,7 +22,7 @@ shows what the agents spent today. Both refresh on their own and only read.
 | Need | Check | Expected | If it fails |
 |---|---|---|---|
 | You run inside a Herdr pane | `test "${HERDR_ENV:-}" = 1 && echo inside` | `inside` | Stop. Open Herdr, open a pane in this repo's folder and start there: the steps add a tab to the session you run in. |
-| Herdr 0.9.5 or newer | `herdr --version` | `herdr 0.9.5` or a newer version | Install or update Herdr (`herdr update`, or herdr.dev). |
+| Herdr 0.9.5 or newer, on this shell's PATH | `herdr --version` | `herdr 0.9.5` or a newer version | Install or update Herdr (`herdr update`, or herdr.dev). On `command not found`, add Herdr's folder to the PATH in your shell's startup file and open a new pane: the steps run `herdr` by name. |
 | Python 3.11 or newer | `python3 -c 'import sys; print(sys.version_info >= (3, 11))'` | `True` | Install a newer Python from python.org or your package manager. |
 | You are in this repo | `test -f src/fleet_view.py && echo here` | `here` | `cd` into the clone of this repo. |
 | Claude Code logs, for the token pane | `test -d ~/.claude/projects && echo logs` | `logs` | The token pane will show $0.00. That is fine if you use other agents; see "Adapt it". |
@@ -83,9 +83,14 @@ python3 src/fleet_view.py spend --once
 Verify: `python3 src/fleet_view.py fleet --once | grep -c 'Herdr gave no spaces' || true`
 Expected: `0`. (`grep -c` exits 1 when it counts nothing; `|| true` keeps
 that from looking like a failure.) If it prints `1`, the line in the view
-says why. When it says
-`'herdr' was not found`, put the full path from `command -v herdr` in
-`[fleet] herdr` of the config.
+says why.
+
+When it says `'herdr' was not found`, Herdr is not on this shell's PATH:
+fix that as in "Before you start". The config's `[fleet] herdr` alone is not enough,
+because steps 5 to 7 and `src/herdr_state.py find` run `herdr` by name. Any
+other reason, such as `herdr:` and a connection error, means this shell
+cannot reach the Herdr server: an agent's sandbox can block it. Stop and
+tell the person; the step may need to run outside the sandbox.
 
 ### 5. Make the Fleet tab and start the fleet pane
 
@@ -165,7 +170,7 @@ answer shows its reason in the fleet pane: test the login with
 | The lever lines | config, `[spend] big_context` and `rebuild_share` | `big_context = 150000`, `rebuild_share = 0.25` |
 | How often each pane redraws | config, `[fleet] interval` and `[spend] interval` | `interval = 5` |
 | Programs shown per machine | config, `[fleet] top_programs` | `top_programs = 5` |
-| The Herdr command | config, `[fleet] herdr` | the full path from `command -v herdr` |
+| The Herdr command the views run | config, `[fleet] herdr`; the steps use `herdr` from the PATH | the full path from `command -v herdr`, for a pane whose PATH has no Herdr |
 | Which workspace gets the tab | `--workspace` in step 5 | a `workspace_id` from `herdr workspace list` |
 | Pane sizes | `--ratio` in steps 6 and 7 | `--ratio 0.6` keeps 60% for the pane that is split |
 | Another agent's logs | `src/spend.py`: a reader that builds `Call` records, like `calls_in` | a reader for Codex's session logs, with `READER_KIND = "codex"` |
